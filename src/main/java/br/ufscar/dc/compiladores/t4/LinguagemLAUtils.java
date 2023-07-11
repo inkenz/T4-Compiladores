@@ -223,31 +223,13 @@ public class LinguagemLAUtils {
         }
     }
 
-        
-    public static Tipo verificarTipo(TabelaDeSimbolos tabela,TipoContext ctx)
-    {
-        if(ctx == null) return Tipo.INVALIDO;
-        if(ctx.tipo_estendido() != null)
-        {
-            return verificarTipo(tabela, ctx.tipo_estendido());
-        }
-        else
-        {
-            System.out.print(ctx.getText());
-            return verificarTipo(tabela, ctx.registro());
-        }
-        
-    }
-    
-    
-    
     public static Tipo verificarTipo(TabelaDeSimbolos tabela, Tipo_estendidoContext ctx)
     {
         Tipo tipo;
-        
+
         // Caso haja o simbolo de ponteiro antes é declarado como ponteiro.
         if (ctx.PONTEIRO() != null){
-            tipo = Tipo.PONTEIRO;
+            return Tipo.PONTEIRO;
         }
         else if (ctx.IDENT() != null) {
             if (tabela.existe(ctx.IDENT().getText()))
@@ -266,22 +248,42 @@ public class LinguagemLAUtils {
         
         return tipo;
     }
+
     
-    
+
+    public static Tipo verificarTipo(TabelaDeSimbolos tabela,TipoContext ctx)
+    {
+       if(ctx.tipo_estendido() != null) return verificarTipo(tabela, ctx.tipo_estendido());
+       
+       return Tipo.REGISTRO;
+    }
+
     public static Tipo verificarTipo(TabelaDeSimbolos tabela, VariavelContext ctx)
     {
         Tipo tipo = verificarTipo(tabela, ctx.tipo());
 
         ctx.identificador().forEach(ident -> {
+            System.out.println("ident -> " +ident.getText());
             if (tabela.existe(ident.getText())){
-                System.out.print(ctx.getText());
                 adicionarErroSemantico(
                     ident.start,
                     "identificador " + ident.getText() + " ja declarado anteriormente"
                     );
             }
             else{
+                System.out.println("DEU MERDA -> "+ ident.getText() + " "+ tipo);
                 tabela.inserir(ident.getText(), tipo);
+                if(tipo == Tipo.REGISTRO){
+                    List<VariavelContext> registros = ctx.tipo().registro().variavel();
+                    for(int i = 0; i < registros.size(); i++){
+                        Tipo tipoRegistro = verificarTipo(tabela, registros.get(i).tipo());
+
+                        registros.get(i).identificador().forEach(identRegistro -> {
+                            String registro = ident.getText() + '.' + identRegistro.getText();
+                            tabela.inserir(registro, tipoRegistro);
+                        });
+                    }
+                }
             }
         });
 
@@ -309,19 +311,6 @@ public class LinguagemLAUtils {
         }
         //System.out.println(nomeVar);
         return ret;
-    }
-
-    public static Tipo verificarTipo(TabelaDeSimbolos tabela, RegistroContext ctx) {
-        if (ctx.variavel() != null){            
-            Tipo tipo = Tipo.INVALIDO;
-            for(VariavelContext var:  ctx.variavel()){
-                tipo = verificarTipo(tabela, var);
-            }
-            return tipo;       
-        }
-        else
-            return Tipo.INVALIDO;
-    
     }
     
 }

@@ -18,18 +18,42 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
     public Void visitDeclaracao_local(LAParser.Declaracao_localContext ctx)
     {
         TabelaDeSimbolos tabela = escopos.escopoAtual();
-
-        if (ctx.DECLARE() != null){
+        
+        if (ctx.DECLARE() != null)
             verificarTipo(tabela, ctx.variavel());       
+        
+        else if(ctx.TIPO() != null){
+            String nomeVar = ctx.IDENT().getText();
+            Tipo tipo = verificarTipo(tabela, ctx.tipo());
+            
+            if(tabela.existe(nomeVar)){
+                adicionarErroSemantico(ctx.start, "identificador " + nomeVar + " ja declarado anteriormente");
+            }
+            else{
+                tabela.inserir(nomeVar, tipo);
+            }
         }
+
         return super.visitDeclaracao_local(ctx);
+    }
+
+    @Override
+    public Void visitRegistro(LAParser.RegistroContext ctx){
+        TabelaDeSimbolos tabela = escopos.escopoAtual();
+               
+        for(int i = 0; i < ctx.variavel().size(); i++){
+            System.out.println("Variavel de registro -> " + ctx.variavel().get(i).getText());
+            verificarTipo(tabela, ctx.variavel().get(i));
+        }
+        //System.out.println("Aka -> " + ctx.variavel().get(0).getText());
+
+        return super.visitRegistro(ctx);
     }
 
     @Override
     public Void visitCmdAtribuicao(LAParser.CmdAtribuicaoContext ctx) {
         Tipo tipoExp = verificarTipo(escopos, ctx.expressao());
         boolean error = false;
-
         String nomeVar = ctx.identificador().getText();
         
         if (tipoExp != Tipo.INVALIDO) {
@@ -53,16 +77,12 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
         }
 
         if(error){
-            System.out.print(ctx.getText()+" "+tipoExp+"\n");
+            //System.out.print(ctx.getText()+" "+tipoExp+"\n");
             adicionarErroSemantico(ctx.identificador().start, "atribuicao nao compativel para " + nomeVar );
         }
 
         return super.visitCmdAtribuicao(ctx);
-    }
-
-    
-    
-    
+    }  
     
     @Override
     public Void visitIdentificador(LAParser.IdentificadorContext ctx) 
