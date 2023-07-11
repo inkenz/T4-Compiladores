@@ -1,11 +1,11 @@
-package br.ufscar.dc.compiladores.t3;
+package br.ufscar.dc.compiladores.t4;
 
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.FileWriter;
 
-import br.ufscar.dc.compiladores.t3.LAParser.ProgramaContext;
+import br.ufscar.dc.compiladores.t4.LAParser.ProgramaContext;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;

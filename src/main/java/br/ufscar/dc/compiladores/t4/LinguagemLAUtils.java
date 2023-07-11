@@ -1,27 +1,28 @@
-package br.ufscar.dc.compiladores.t3;
+package br.ufscar.dc.compiladores.t4;
 
 import java.util.ArrayList;
 import java.util.List;
 import org.antlr.v4.runtime.Token;
-import br.ufscar.dc.compiladores.t3.LAParser.TipoContext;
-import br.ufscar.dc.compiladores.t3.LAParser.Tipo_basicoContext;
-import br.ufscar.dc.compiladores.t3.LAParser.Tipo_estendidoContext;
-import br.ufscar.dc.compiladores.t3.LAParser.VariavelContext;
-import br.ufscar.dc.compiladores.t3.LAParser.ExpressaoContext;
-import br.ufscar.dc.compiladores.t3.LAParser.Termo_logicoContext;
-import br.ufscar.dc.compiladores.t3.LAParser.Fator_logicoContext;
-import br.ufscar.dc.compiladores.t3.LAParser.Parcela_logicaContext;
-import br.ufscar.dc.compiladores.t3.LAParser.Exp_relacionalContext;
-import br.ufscar.dc.compiladores.t3.LAParser.Exp_aritmeticaContext;
-import br.ufscar.dc.compiladores.t3.LAParser.TermoContext;
-import br.ufscar.dc.compiladores.t3.LAParser.FatorContext;
-import br.ufscar.dc.compiladores.t3.LAParser.IdentificadorContext;
-import br.ufscar.dc.compiladores.t3.LAParser.ParcelaContext;
-import br.ufscar.dc.compiladores.t3.LAParser.Parcela_nao_unarioContext;
-import br.ufscar.dc.compiladores.t3.LAParser.Parcela_unarioContext;
+import br.ufscar.dc.compiladores.t4.LAParser.TipoContext;
+import br.ufscar.dc.compiladores.t4.LAParser.Tipo_basicoContext;
+import br.ufscar.dc.compiladores.t4.LAParser.Tipo_estendidoContext;
+import br.ufscar.dc.compiladores.t4.LAParser.VariavelContext;
+import br.ufscar.dc.compiladores.t4.LAParser.ExpressaoContext;
+import br.ufscar.dc.compiladores.t4.LAParser.Termo_logicoContext;
+import br.ufscar.dc.compiladores.t4.LAParser.Fator_logicoContext;
+import br.ufscar.dc.compiladores.t4.LAParser.Parcela_logicaContext;
+import br.ufscar.dc.compiladores.t4.LAParser.Exp_relacionalContext;
+import br.ufscar.dc.compiladores.t4.LAParser.Exp_aritmeticaContext;
+import br.ufscar.dc.compiladores.t4.LAParser.TermoContext;
+import br.ufscar.dc.compiladores.t4.LAParser.FatorContext;
+import br.ufscar.dc.compiladores.t4.LAParser.IdentificadorContext;
+import br.ufscar.dc.compiladores.t4.LAParser.ParcelaContext;
+import br.ufscar.dc.compiladores.t4.LAParser.Parcela_nao_unarioContext;
+import br.ufscar.dc.compiladores.t4.LAParser.Parcela_unarioContext;
+import br.ufscar.dc.compiladores.t4.LAParser.RegistroContext;
 
 
-import br.ufscar.dc.compiladores.t3.TabelaDeSimbolos.Tipo;
+import br.ufscar.dc.compiladores.t4.TabelaDeSimbolos.Tipo;
 
 
 public class LinguagemLAUtils {
@@ -189,7 +190,6 @@ public class LinguagemLAUtils {
     }
     
     public static Tipo verificarTipo(Escopo escopos, Parcela_nao_unarioContext ctx) {
-        Tipo ret = null;
         if(ctx.ENDERECO() != null) return Tipo.PONTEIRO;
         else return Tipo.LITERAL;    
     }
@@ -223,27 +223,42 @@ public class LinguagemLAUtils {
         }
     }
 
+        
+    public static Tipo verificarTipo(TabelaDeSimbolos tabela,TipoContext ctx)
+    {
+        if(ctx == null) return Tipo.INVALIDO;
+        if(ctx.tipo_estendido() != null)
+        {
+            return verificarTipo(tabela, ctx.tipo_estendido());
+        }
+        else
+        {
+            System.out.print(ctx.getText());
+            return verificarTipo(tabela, ctx.registro());
+        }
+        
+    }
+    
+    
+    
     public static Tipo verificarTipo(TabelaDeSimbolos tabela, Tipo_estendidoContext ctx)
     {
         Tipo tipo;
-
+        
         // Caso haja o simbolo de ponteiro antes é declarado como ponteiro.
         if (ctx.PONTEIRO() != null){
-            return Tipo.PONTEIRO;
+            tipo = Tipo.PONTEIRO;
         }
-
-        // Caso seja um identificador, é um registro,
-        // então é necessário ver se o tipo de registro existe.
         else if (ctx.IDENT() != null) {
-            if (!tabela.existe(ctx.IDENT().getText())){
-                return Tipo.INVALIDO;
+            if (tabela.existe(ctx.IDENT().getText()))
+            {
+                tipo = tabela.verificar(ctx.IDENT().getText());
             }
-            else{
-                tipo = Tipo.REGISTRO;
+            else
+            {
+                tipo = Tipo.INVALIDO;
             }
         }
-        
-        // É uma variável de tipo básico.
         else {
             tipo = verificarTipo(tabela, ctx.tipo_basico());
         }
@@ -251,17 +266,8 @@ public class LinguagemLAUtils {
         
         return tipo;
     }
-
-    public static Tipo verificarTipo(TabelaDeSimbolos tabela,TipoContext ctx)
-    {
-        // if (ctx.tipo_variavel() != null){
-            return verificarTipo(tabela, ctx.tipo_estendido());
-        // }
-        // else{
-        //     return verificarTipo(tabela, ctx.registro());
-        // }
-    }
-
+    
+    
     public static Tipo verificarTipo(TabelaDeSimbolos tabela, VariavelContext ctx)
     {
         Tipo tipo = verificarTipo(tabela, ctx.tipo());
@@ -279,7 +285,7 @@ public class LinguagemLAUtils {
             }
         });
 
-        if (tipo == Tipo.INVALIDO){
+        if (tipo == Tipo.INVALIDO && ctx.tipo() != null){
             adicionarErroSemantico(ctx.tipo().start, "tipo " + ctx.tipo().getText() + " nao declarado" );
         }
 
@@ -303,6 +309,19 @@ public class LinguagemLAUtils {
         }
         //System.out.println(nomeVar);
         return ret;
+    }
+
+    public static Tipo verificarTipo(TabelaDeSimbolos tabela, RegistroContext ctx) {
+        if (ctx.variavel() != null){            
+            Tipo tipo = Tipo.INVALIDO;
+            for(VariavelContext var:  ctx.variavel()){
+                tipo = verificarTipo(tabela, var);
+            }
+            return tipo;       
+        }
+        else
+            return Tipo.INVALIDO;
+    
     }
     
 }

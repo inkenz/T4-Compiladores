@@ -1,8 +1,8 @@
-package br.ufscar.dc.compiladores.t3;
+package br.ufscar.dc.compiladores.t4;
 
-import static br.ufscar.dc.compiladores.t3.LinguagemLAUtils.adicionarErroSemantico;
-import static br.ufscar.dc.compiladores.t3.LinguagemLAUtils.verificarTipo;
-import br.ufscar.dc.compiladores.t3.TabelaDeSimbolos.Tipo;
+import static br.ufscar.dc.compiladores.t4.LinguagemLAUtils.adicionarErroSemantico;
+import static br.ufscar.dc.compiladores.t4.LinguagemLAUtils.verificarTipo;
+import br.ufscar.dc.compiladores.t4.TabelaDeSimbolos.Tipo;
 import java.util.LinkedList;
 public class LinguagemLAVisitor extends LABaseVisitor<Void>{
     Escopo escopos = new Escopo();
@@ -29,6 +29,7 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
     public Void visitCmdAtribuicao(LAParser.CmdAtribuicaoContext ctx) {
         Tipo tipoExp = verificarTipo(escopos, ctx.expressao());
         boolean error = false;
+
         String nomeVar = ctx.identificador().getText();
         
         if (tipoExp != Tipo.INVALIDO) {
@@ -45,6 +46,10 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
             }
         } else{
             error = true;
+        }
+        
+        if(ctx.PONTEIRO() != null){
+            nomeVar = ctx.PONTEIRO().getText()+nomeVar;
         }
 
         if(error){

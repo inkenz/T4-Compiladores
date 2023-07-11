@@ -1,4 +1,4 @@
-package br.ufscar.dc.compiladores.t3;
+package br.ufscar.dc.compiladores.t4;
 
 import java.util.LinkedList;
 

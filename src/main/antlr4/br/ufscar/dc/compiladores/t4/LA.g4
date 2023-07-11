@@ -116,15 +116,18 @@ declaracao_global:
     PROCEDIMENTO IDENT ABREPAR (parametros)? FECHAPAR (declaracao_local)* (cmd)* FIM_PROCEDIMENTO
     | FUNCAO IDENT ABREPAR (parametros)? FECHAPAR DOISPONTOS tipo_estendido (declaracao_local)* (cmd)* FIM_FUNCAO
 ;
+
 variavel:
     identificador (VIRGULA identificador)* DOISPONTOS tipo
 ;
+
 identificador:
     IDENT (PONTO IDENT)* dimensao
 ;
 dimensao:
     (ABREBAR exp_aritmetica FECHABAR)*
 ;
+
 corpo:
     (declaracao_local)* (cmd)*
 ;
@@ -149,6 +152,7 @@ valor_constante:
 registro:
     REGISTRO (variavel)* FIM_REGISTRO
 ;
+
 cmd:
     cmdLeia | cmdEscreva | cmdSe | cmdCaso | cmdPara | cmdEnquanto
    | cmdFaca | cmdAtribuicao | cmdChamada | cmdRetorne
