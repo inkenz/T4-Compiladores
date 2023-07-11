@@ -271,7 +271,6 @@ public class LinguagemLAUtils {
                     );
             }
             else{
-                System.out.println("DEU MERDA -> "+ ident.getText() + " "+ tipo);
                 tabela.inserir(ident.getText(), tipo);
                 if(tipo == Tipo.REGISTRO){
                     List<VariavelContext> registros = ctx.tipo().registro().variavel();
