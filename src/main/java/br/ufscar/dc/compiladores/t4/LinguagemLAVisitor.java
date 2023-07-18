@@ -26,7 +26,6 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
                 }
             }
         }
-        
         return super.visitPrograma(ctx); 
     }
 
@@ -56,6 +55,18 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
                 tabela.inserir(nomeVar, tipo);
             }
         }
+        else if(ctx.CONSTANTE() != null){
+            String nomeVar = ctx.IDENT().getText();
+            Tipo tipo = verificarTipo(tabela, ctx.tipo_basico());
+            
+            if(tabela.existe(nomeVar)){
+                adicionarErroSemantico(ctx.start, "identificador " + nomeVar + " ja declarado anteriormente");
+            }
+            else{
+                tabela.inserir(nomeVar, tipo);
+            }
+        }
+
 
         return super.visitDeclaracao_local(ctx);
     }
