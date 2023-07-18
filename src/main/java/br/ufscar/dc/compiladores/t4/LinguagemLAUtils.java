@@ -16,12 +16,10 @@ import br.ufscar.dc.compiladores.t4.LAParser.Exp_aritmeticaContext;
 import br.ufscar.dc.compiladores.t4.LAParser.TermoContext;
 import br.ufscar.dc.compiladores.t4.LAParser.FatorContext;
 import br.ufscar.dc.compiladores.t4.LAParser.IdentificadorContext;
+import br.ufscar.dc.compiladores.t4.LAParser.ParametroContext;
 import br.ufscar.dc.compiladores.t4.LAParser.ParcelaContext;
 import br.ufscar.dc.compiladores.t4.LAParser.Parcela_nao_unarioContext;
 import br.ufscar.dc.compiladores.t4.LAParser.Parcela_unarioContext;
-import br.ufscar.dc.compiladores.t4.LAParser.RegistroContext;
-
-
 import br.ufscar.dc.compiladores.t4.TabelaDeSimbolos.Tipo;
 
 
@@ -76,9 +74,7 @@ public class LinguagemLAUtils {
         return verificarTipo(escopos, ctx.parcela_logica());
     }
     
-    public static Tipo verificarTipo(Escopo escopos, Parcela_logicaContext ctx) {
-        Tipo ret = null;
-        
+    public static Tipo verificarTipo(Escopo escopos, Parcela_logicaContext ctx) {        
         if(ctx.VERDADEIRO() != null || ctx.FALSO() != null) return Tipo.LOGICO;
         
         
@@ -304,6 +300,30 @@ public class LinguagemLAUtils {
 
         if (tipo == Tipo.INVALIDO && ctx.tipo() != null){
             adicionarErroSemantico(ctx.tipo().start, "tipo " + ctx.tipo().getText() + " nao declarado" );
+        }
+
+        return tipo;
+    }
+
+    public static Tipo verificarTipo(TabelaDeSimbolos tabela, ParametroContext ctx)
+    {
+        Tipo tipo = verificarTipo(tabela, ctx.tipo_estendido());
+
+        ctx.identificador().forEach(ident -> {
+            System.out.println("ident -> " +ident.getText());
+            if (tabela.existe(ident.getText())){
+                adicionarErroSemantico(
+                    ident.start,
+                    "identificador " + ident.getText() + " ja declarado anteriormente"
+                    );
+            }
+            else{
+                tabela.inserir(ident.getText(), tipo);
+            }
+        });
+
+        if (tipo == Tipo.INVALIDO && ctx.tipo_estendido() != null){
+            adicionarErroSemantico(ctx.tipo_estendido().start, "tipo " + ctx.tipo_estendido().getText() + " nao declarado" );
         }
 
         return tipo;

@@ -7,6 +7,28 @@ import java.util.LinkedList;
 public class LinguagemLAVisitor extends LABaseVisitor<Void>{
     Escopo escopos = new Escopo();
 
+
+    @Override
+    public Void visitPrograma(LAParser.ProgramaContext ctx) { 
+        for(var ctxCmd: ctx.corpo().cmd()){
+            if(ctxCmd.cmdRetorne() != null){
+                adicionarErroSemantico(ctxCmd.cmdRetorne().getStart(),"comando retorne nao permitido nesse escopo");
+            }
+        }
+        
+        for(var ctxDec : ctx.declaracoes().decl_local_global()){
+            if(ctxDec.declaracao_global() != null){
+                if( ctxDec.declaracao_global().tipo_estendido() == null){
+                    for(var ctxCmd: ctxDec.declaracao_global().cmd()){
+                        if(ctxCmd.cmdRetorne() != null)
+                            adicionarErroSemantico(ctxCmd.cmdRetorne().getStart(),"comando retorne nao permitido nesse escopo");
+                    }
+                }
+            }
+        }
+        return super.visitPrograma(ctx); 
+    }
+
     @Override
     public Void visitDeclaracoes(LAParser.DeclaracoesContext ctx) 
     {
@@ -35,8 +57,46 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
                 tabela.inserir(nomeVar, tipo);
             }
         }
+        else if(ctx.CONSTANTE() != null){
+            String nomeVar = ctx.IDENT().getText();
+            Tipo tipo = verificarTipo(tabela, ctx.tipo_basico());
+            
+            if(tabela.existe(nomeVar)){
+                adicionarErroSemantico(ctx.start, "identificador " + nomeVar + " ja declarado anteriormente");
+            }
+            else{
+                tabela.inserir(nomeVar, tipo);
+            }
+        }
+
 
         return super.visitDeclaracao_local(ctx);
+    }
+
+    @Override
+    public Void visitDeclaracao_global(LAParser.Declaracao_globalContext ctx)
+    {
+        TabelaDeSimbolos tabela = escopos.escopoAtual();
+
+        if (ctx.PROCEDIMENTO() != null){
+            String nomeVar = ctx.IDENT().getText();
+            if(tabela.existe(nomeVar))
+                adicionarErroSemantico(ctx.start, "identificador " + nomeVar + " ja declarado anteriormente");
+            for (int i = 0; i < ctx.parametros().parametro().size(); i++){
+                verificarTipo(tabela, ctx.parametros().parametro().get(i));
+            }
+        }
+
+        else if(ctx.FUNCAO() != null){
+            String nomeVar = ctx.IDENT().getText();
+            if(tabela.existe(nomeVar))
+                adicionarErroSemantico(ctx.start, "identificador " + nomeVar + " ja declarado anteriormente");
+            for (int i = 0; i < ctx.parametros().parametro().size(); i++){
+                verificarTipo(tabela, ctx.parametros().parametro().get(i));
+            }
+        }
+
+        return super.visitDeclaracao_global(ctx);
     }
 
     @Override
