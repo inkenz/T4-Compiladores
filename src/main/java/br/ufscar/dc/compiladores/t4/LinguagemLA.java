@@ -1,7 +1,6 @@
 package br.ufscar.dc.compiladores.t4;
 
 import java.io.IOException;
-import java.io.FileNotFoundException;
 import java.io.PrintWriter;
 import java.io.FileWriter;
 
