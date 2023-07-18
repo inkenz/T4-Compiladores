@@ -259,24 +259,40 @@ public class LinguagemLAUtils {
         Tipo tipo = verificarTipo(tabela, ctx.tipo());
 
         ctx.identificador().forEach(ident -> {
-            System.out.println("ident -> " +ident.getText());
+            System.out.println("verificando ident -> " +ident.getText());
             if (tabela.existe(ident.getText())){
+                System.out.println("Erro -> " + ident.getText());
                 adicionarErroSemantico(
                     ident.start,
                     "identificador " + ident.getText() + " ja declarado anteriormente"
                     );
             }
             else{
+                System.out.println("adicionei variavel -> " + ident.getText() + " " + tipo);
                 tabela.inserir(ident.getText(), tipo);
                 if(tipo == Tipo.REGISTRO){
-                    List<VariavelContext> registros = ctx.tipo().registro().variavel();
-                    for(int i = 0; i < registros.size(); i++){
-                        Tipo tipoRegistro = verificarTipo(tabela, registros.get(i).tipo());
+                    if (tabela.existe(ctx.tipo().getText())){
+                        String tipoRegistro = ctx.tipo().getText();
+                        
+                        List<String> variaveis = tabela.retornar_todas_occorencias(tipoRegistro);
+                        System.out.println(tipoRegistro + " " + variaveis);
 
-                        registros.get(i).identificador().forEach(identRegistro -> {
-                            String registro = ident.getText() + '.' + identRegistro.getText();
-                            tabela.inserir(registro, tipoRegistro);
-                        });
+                        for(String variavel : variaveis){
+                            if(!tipoRegistro.equals(variavel)){
+                                System.out.println("AQUI -> " + ident.getText() + "." + variavel.split("\\.")[1] + " " + tabela.verificar(variavel));
+                                tabela.inserir(ident.getText() + "." + variavel.split("\\.")[1], tabela.verificar(variavel));
+                            }
+                        }
+
+                    }
+                    else if(ctx.tipo().registro() != null){
+                        for(int i = 0; i < ctx.tipo().registro().variavel().size(); i++){
+                            Tipo tipoRegistro = verificarTipo(tabela, ctx.tipo().registro().variavel(i).tipo());
+                            for(int j = 0; j < ctx.tipo().registro().variavel(i).identificador().size(); j++){
+                                System.out.println("AQUI -> " + ident.getText() + "." + ctx.tipo().registro().variavel(i).identificador(j).getText()+ " " + tipoRegistro);
+                                tabela.inserir(ident.getText() + "." + ctx.tipo().registro().variavel(i).identificador(j).getText(), tipoRegistro);
+                            }
+                        }
                     }
                 }
             }
