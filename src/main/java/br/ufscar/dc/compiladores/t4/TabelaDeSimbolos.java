@@ -3,8 +3,6 @@ package br.ufscar.dc.compiladores.t4;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
 
 public class TabelaDeSimbolos {
     public enum Tipo {
@@ -47,11 +45,11 @@ public class TabelaDeSimbolos {
         return tabela.get(nome).tipo;
     }   
 
-    public List<String> retornar_todas_occorencias(String nome){
+    public List<String> retornar_todas_occorencias_registro(String nome){
         List<String> nomes = new ArrayList<>();
 
         for(String variavel : tabela.keySet()){
-            if(variavel.contains(nome))
+            if(variavel.contains(nome + "."))
                 nomes.add(variavel);
         }
 

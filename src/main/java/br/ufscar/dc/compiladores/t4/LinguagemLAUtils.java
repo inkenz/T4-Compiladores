@@ -274,14 +274,13 @@ public class LinguagemLAUtils {
                     if (tabela.existe(ctx.tipo().getText())){
                         String tipoRegistro = ctx.tipo().getText();
                         
-                        List<String> variaveis = tabela.retornar_todas_occorencias(tipoRegistro);
+                        List<String> variaveis = tabela.retornar_todas_occorencias_registro(tipoRegistro);
                         System.out.println(tipoRegistro + " " + variaveis);
 
                         for(String variavel : variaveis){
-                            if(!tipoRegistro.equals(variavel)){
-                                System.out.println("AQUI -> " + ident.getText() + "." + variavel.split("\\.")[1] + " " + tabela.verificar(variavel));
-                                tabela.inserir(ident.getText() + "." + variavel.split("\\.")[1], tabela.verificar(variavel));
-                            }
+                            System.out.println("AQUI -> " + ident.getText() + "." + variavel.split("\\.")[1] + " " + tabela.verificar(variavel));
+                            tabela.inserir(ident.getText() + "." + variavel.split("\\.")[1], tabela.verificar(variavel));
+                            
                         }
 
                     }
