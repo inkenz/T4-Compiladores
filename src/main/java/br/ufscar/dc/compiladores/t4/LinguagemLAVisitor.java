@@ -1,7 +1,5 @@
 package br.ufscar.dc.compiladores.t4;
 
-import br.ufscar.dc.compiladores.t4.LAParser.IdentificadorContext;
-import br.ufscar.dc.compiladores.t4.LAParser.ParametroContext;
 import static br.ufscar.dc.compiladores.t4.LinguagemLAUtils.adicionarErroSemantico;
 import static br.ufscar.dc.compiladores.t4.LinguagemLAUtils.verificarTipo;
 import static br.ufscar.dc.compiladores.t4.LinguagemLAUtils.verificar;
@@ -159,8 +157,23 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
         Tipo tipoExp = verificarTipo(escopos, ctx.expressao());
         boolean error = false;
         String nomeVar = ctx.identificador().getText();
+
+        if(nomeVar.contains("[") /* caso a variavel seja um array */){
+            String arrayName = null;
+            for(TabelaDeSimbolos escopo : escopos.recuperarTodosEscopos()){
+                arrayName = escopo.existe_array(nomeVar.split("\\[")[0]);
+                if(arrayName != null){
+                    Tipo tipoVar = verificarTipo(escopos, arrayName);
+
+                    if(tipoVar != tipoExp){
+                        error = true;
+                    }                    
+                }
+            }
+
+        }
         
-        if (tipoExp != Tipo.INVALIDO) {
+        else if (tipoExp != Tipo.INVALIDO) {
             for(TabelaDeSimbolos escopo : escopos.recuperarTodosEscopos()){
                 if (escopo.existe(nomeVar))  {
                     Tipo tipoVar = verificarTipo(escopos, nomeVar);
@@ -173,7 +186,10 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
                 } 
             }
         } else{
-            error = true;
+            for(TabelaDeSimbolos escopo : escopos.recuperarTodosEscopos()){
+                if(escopo.existe(nomeVar))
+                    error = true; // esse for serve para ver se a variavel existe, porque pode ocorrer dela não existir e o tipo ser invalido
+            }
         }
         
         if(ctx.PONTEIRO() != null){
@@ -181,7 +197,6 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
         }
 
         if(error){
-            //System.out.print(ctx.getText()+" "+tipoExp+"\n");
             adicionarErroSemantico(ctx.identificador().start, "atribuicao nao compativel para " + nomeVar );
         }
 
@@ -221,14 +236,21 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
         for(int i = 1; i < ctx.IDENT().size(); i++)
             nome += "." + ctx.IDENT(i).getText();
 
-        //System.out.println("Novo nome -> " + nome + " "+ ctx.getParent().getParent().getClass());
-
-        for ( TabelaDeSimbolos tabela: tabelas){
-            if (tabela.existe(nome)){
-                existeVariavel = true;
-                break;
+        if(!ctx.dimensao().getText().isEmpty() /* Caso seja um array */)
+            for ( TabelaDeSimbolos tabela: tabelas){
+                String nomeArray = tabela.existe_array(nome);
+                if (nomeArray != null){
+                    existeVariavel = true;
+                    break;
+                }
             }
-        }
+        else
+            for ( TabelaDeSimbolos tabela: tabelas){
+                if (tabela.existe(nome)){
+                    existeVariavel = true;
+                    break;
+                }
+            }
 
         if (!existeVariavel && !(ctx.getParent().getParent() instanceof LAParser.RegistroContext)){
             adicionarErroSemantico(ctx.start, "identificador " + nome + " nao declarado" );

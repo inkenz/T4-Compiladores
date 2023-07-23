@@ -73,4 +73,13 @@ public class TabelaDeSimbolos {
 
         return nomes;
     }
+
+    public String existe_array(String nome){
+        for(String variavel : tabela.keySet()){
+            if(variavel.contains(nome+"["))
+                return variavel;
+        }
+
+        return null;
+    }
 }
