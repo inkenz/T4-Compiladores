@@ -1,4 +1,4 @@
-// Generated from c:\Users\User\Documents\7-Sem\Compiladores\T4-Compiladores\src\main\antlr4\br\u005Cufscar\dc\compiladores\t4\LA.g4 by ANTLR 4.9.2
+// Generated from /home/julio/java/T4-Compiladores/src/main/antlr4/br/ufscar/dc/compiladores/t4/LA.g4 by ANTLR 4.9.2
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.*;

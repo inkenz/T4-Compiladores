@@ -2,6 +2,8 @@ package br.ufscar.dc.compiladores.t4;
 
 import static br.ufscar.dc.compiladores.t4.LinguagemLAUtils.adicionarErroSemantico;
 import static br.ufscar.dc.compiladores.t4.LinguagemLAUtils.verificarTipo;
+import static br.ufscar.dc.compiladores.t4.LinguagemLAUtils.verificar;
+
 import br.ufscar.dc.compiladores.t4.TabelaDeSimbolos.Tipo;
 import java.util.LinkedList;
 public class LinguagemLAVisitor extends LABaseVisitor<Void>{
@@ -26,15 +28,22 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
                 }
             }
         }
+            
         return super.visitPrograma(ctx); 
     }
 
     @Override
-    public Void visitDeclaracoes(LAParser.DeclaracoesContext ctx) 
-    {
+    public Void visitCorpo(LAParser.CorpoContext ctx){
         escopos.criarNovoEscopo();
-        return super.visitDeclaracoes(ctx);
+
+        return super.visitCorpo(ctx);
     }
+
+    // @Override
+    // public Void visitDeclaracoes(LAParser.DeclaracoesContext ctx) 
+    // {
+    //     return super.visitDeclaracoes(ctx);
+    // }
 
     @Override
     public Void visitDeclaracao_local(LAParser.Declaracao_localContext ctx)
@@ -42,14 +51,13 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
         TabelaDeSimbolos tabela = escopos.escopoAtual();
 
         if (ctx.DECLARE() != null)
-            verificarTipo(tabela, ctx.variavel());       
+            verificarTipo(escopos, ctx.variavel());       
         
         else if(ctx.TIPO() != null){
             String nomeVar = ctx.IDENT().getText();
             Tipo tipo = verificarTipo(tabela, ctx.tipo());
-            
+        
             if(tabela.existe(nomeVar)){
-                System.out.println("Erro -> " + nomeVar);
                 adicionarErroSemantico(ctx.start, "identificador " + nomeVar + " ja declarado anteriormente");
             }
             else{
@@ -61,6 +69,8 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
             String nomeVar = ctx.IDENT().getText();
             Tipo tipo = verificarTipo(tabela, ctx.tipo_basico());
             
+            System.out.println("TAMANHO DO ESCOPOS " + escopos.recuperarTodosEscopos().size());
+
             if(tabela.existe(nomeVar)){
                 adicionarErroSemantico(ctx.start, "identificador " + nomeVar + " ja declarado anteriormente");
             }
@@ -88,11 +98,19 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
         }
 
         else if(ctx.FUNCAO() != null){
-            String nomeVar = ctx.IDENT().getText();
-            if(tabela.existe(nomeVar))
-                adicionarErroSemantico(ctx.start, "identificador " + nomeVar + " ja declarado anteriormente");
+            // String nomeVar = ctx.IDENT().getText();
+            // if(tabela.existe(nomeVar))
+            //     adicionarErroSemantico(ctx.start, "identificador " + nomeVar + " ja declarado anteriormente");
+            escopos.criarNovoEscopo();
+            
+            TabelaDeSimbolos tabelaFuncao = escopos.escopoAtual();
+
+            System.out.println("\nInserindo função -> " + ctx.IDENT().getText() + "\n");
+            tabelaFuncao.inserir(ctx.IDENT().getText(), Tipo.FUNCAO);
+            tabelaFuncao.inserir(ctx.IDENT().getText()+".return", verificarTipo(ctx.tipo_estendido()));
+
             for (int i = 0; i < ctx.parametros().parametro().size(); i++){
-                verificarTipo(tabela, ctx.parametros().parametro().get(i));
+                verificarTipo(tabelaFuncao, ctx.parametros().parametro().get(i));
             }
         }
 
@@ -110,7 +128,7 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
                 tabela.inserir(ctxParent.IDENT().getText(), Tipo.REGISTRO);
 
                 for(int i = 0; i < ctxParent.tipo().registro().variavel().size(); i++) {
-                    Tipo tipo = verificarTipo(tabela, ctxParent.tipo().registro().variavel(i));
+                    Tipo tipo = verificarTipo(escopos, ctxParent.tipo().registro().variavel(i));
                     
                     for(int j = 0; j < ctxParent.tipo().registro().variavel(i).identificador().size(); j++){
                         System.out.println("adicionei registro -> " + ctxParent.IDENT().getText() + "." + ctxParent.tipo().registro().variavel(i).identificador(j).getText() + " " + tipo);
@@ -163,6 +181,29 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
 
         return super.visitCmdAtribuicao(ctx);
     }  
+
+    @Override
+    public Void visitCmdSe(LAParser.CmdSeContext ctx){
+
+        LAParser.ExpressaoContext expressao = ctx.expressao();
+
+        for(LAParser.Exp_aritmeticaContext termo : expressao.termo_logico(0).fator_logico(0).parcela_logica().exp_relacional().exp_aritmetica()){
+            verificar(escopos, expressao, termo);
+        }
+
+        return super.visitCmdSe(ctx);
+    }
+
+    @Override
+    public Void visitCmdEscreva(LAParser.CmdEscrevaContext ctx){
+        ctx.expressao().forEach(expressao -> {
+            for(LAParser.Exp_aritmeticaContext termo : expressao.termo_logico(0).fator_logico(0).parcela_logica().exp_relacional().exp_aritmetica()){
+                verificar(escopos, expressao, termo);
+            }
+        });
+
+        return super.visitCmdEscreva(ctx);
+    }
     
     @Override
     public Void visitIdentificador(LAParser.IdentificadorContext ctx) 
@@ -174,7 +215,7 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
         for(int i = 1; i < ctx.IDENT().size(); i++)
             nome += "." + ctx.IDENT(i).getText();
 
-        System.out.println("Novo nome -> " + nome + " "+ ctx.getParent().getParent().getClass());
+        System.out.println("Novo nome -> " + nome);
 
         for ( TabelaDeSimbolos tabela: tabelas){
             if (tabela.existe(nome)){
@@ -183,29 +224,7 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
             }
         }
 
-        /*if(ctx.getParent().getParent().getParent().getParent() instanceof LAParser.Declaracao_localContext){
-            LAParser.Declaracao_localContext ctxParent = (LAParser.Declaracao_localContext) ctx.getParent().getParent().getParent().getParent();
-            //System.out.println("AQUI -> " + ctxParent.IDENT());
-            for ( TabelaDeSimbolos tabela: tabelas){
-                if (tabela.existe(ctxParent.IDENT() + "." + nome)){
-                    existeVariavel = true;
-                    break;
-                }
-            }
-
-            System.out.println("verificando se existe -> " + ctxParent.IDENT() + "." + nome);
-            
-            if(!existeVariavel){
-                System.out.println("Erro -> " + ctxParent.IDENT() + "." + nome);
-                adicionarErroSemantico(ctx.start, "identificador " + ctxParent.IDENT() + "." + nome + " nao declarado" );
-            }
-        }*/
-
         if (!existeVariavel && !(ctx.getParent().getParent() instanceof LAParser.RegistroContext)){
-            ctx.IDENT().forEach(ident -> {
-                System.out.println("Erro no ctx ident -> " + ident.getText());
-
-            });
             adicionarErroSemantico(ctx.start, "identificador " + nome + " nao declarado" );
             
         }
