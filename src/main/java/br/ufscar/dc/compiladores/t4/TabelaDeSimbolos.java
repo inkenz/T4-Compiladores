@@ -52,6 +52,17 @@ public class TabelaDeSimbolos {
         return tabela.get(nome).tipo;
     }   
 
+    public List<Tipo> retornar_todos_parametros_funcao(String nomeFuncao){
+        List<Tipo> parametrosTipo = new ArrayList<>();
+
+        for(String parametro : tabela.keySet()){
+            if(!parametro.equals(nomeFuncao) && !parametro.contains("return"))
+                parametrosTipo.add(tabela.get(parametro).tipo);
+        }
+
+        return parametrosTipo;
+    }
+
     public List<String> retornar_todas_occorencias_registro(String nome){
         List<String> nomes = new ArrayList<>();
 

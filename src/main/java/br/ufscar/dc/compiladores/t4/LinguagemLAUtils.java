@@ -1,6 +1,7 @@
 package br.ufscar.dc.compiladores.t4;
 
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import org.antlr.v4.runtime.Token;
 import br.ufscar.dc.compiladores.t4.LAParser.TipoContext;
@@ -32,6 +33,51 @@ public class LinguagemLAUtils {
         errosSemanticos.add(String.format("Linha %d: %s", linha, mensagem));
     }
 
+    public static Void verificar(Escopo escopos, ExpressaoContext ctxExpressao, Exp_aritmeticaContext ctx){
+        Tipo tipo = verificarTipo(escopos, ctx);
+
+        if(tipo == Tipo.FUNCAO){
+            List<LAParser.ExpressaoContext> expressaoParametros = ctxExpressao.termo_logico(0).fator_logico(0).parcela_logica().exp_relacional().exp_aritmetica(0).termo(0).fator(0).parcela(0).parcela_unario().expressao();
+            LinkedList<TabelaDeSimbolos> escopoList = escopos.recuperarTodosEscopos();
+            String nomeFuncao = ctx.getText().split("\\(")[0];
+
+            boolean achouFuncao = false;
+            int contador = 0;
+
+            while(!achouFuncao && contador < escopoList.size()){
+                if(escopoList.get(contador).existe(nomeFuncao))
+                    achouFuncao = true;
+                else
+                    contador++;
+            }
+
+            if(!achouFuncao)
+                adicionarErroSemantico(ctx.start, "identificador " + nomeFuncao + " nao declarado" );
+            else{
+                TabelaDeSimbolos escopoFuncao = escopoList.get(contador);
+                List<Tipo> tipoParametrosFuncao = escopoFuncao.retornar_todos_parametros_funcao(nomeFuncao); 
+
+                if(tipoParametrosFuncao.size() != expressaoParametros.size()){
+                    System.out.println("Aqui erro " + tipoParametrosFuncao + " " + expressaoParametros.size());
+                    adicionarErroSemantico(expressaoParametros.get(0).start, "incompatibilidade de parametros na chamada de " + nomeFuncao);
+                }
+                else{
+                    for(int i = 0; i < expressaoParametros.size(); i++){
+                        Tipo tipoParametro = verificarTipo(escopos, expressaoParametros.get(i));
+                        System.out.println("AQUI -> " + tipoParametrosFuncao.get(i) +  " " + expressaoParametros.get(i).getText() + " " + tipoParametro);
+
+                        if(tipoParametro == Tipo.FUNCAO){
+                            //System.out.println("👀👀 -> " + verificarTipo(escopos, expressaoParametros.get(i)));
+                        }
+                        else if(tipoParametro != tipoParametrosFuncao.get(i)){
+                            adicionarErroSemantico(expressaoParametros.get(i).start, "incompatibilidade de parametros na chamada de " + nomeFuncao);
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
     
     public static TabelaDeSimbolos.Tipo verificarTipo(Escopo escopos, ExpressaoContext ctx) {
         Tipo ret = null;
@@ -160,17 +206,17 @@ public class LinguagemLAUtils {
         else if(ctx.NUM_REAL() != null) return Tipo.REAL;
         else if(ctx.identificador() != null) return verificarTipo(escopos, ctx.identificador());
         else if(ctx.IDENT() != null){
-            Tipo ret = null;
-            ret = verificarTipo(escopos, ctx.IDENT().getText());
-            for (ExpressaoContext fa : ctx.expressao()) {
-                Tipo aux = verificarTipo(escopos, fa);
-                if (ret == null) {
-                    ret = aux;
-                } else if (ret != aux && aux != Tipo.INVALIDO) {
-                    ret = Tipo.INVALIDO;
-                }
-            }
-            return ret;
+            // Tipo ret = null;
+            // ret = verificarTipo(escopos, ctx.IDENT().getText());
+            // for (ExpressaoContext fa : ctx.expressao()) {
+            //     Tipo aux = verificarTipo(escopos, fa);
+            //     if (ret == null) {
+            //         ret = aux;
+            //     } else if (ret != aux && aux != Tipo.INVALIDO) {
+            //         ret = Tipo.INVALIDO;
+            //     }
+            // }
+            return Tipo.FUNCAO;
         } else{
             Tipo ret = null;
             for (ExpressaoContext fa : ctx.expressao()) {
@@ -190,11 +236,25 @@ public class LinguagemLAUtils {
         else return Tipo.LITERAL;    
     }
     
+    public static Tipo verificarTipo(Tipo_estendidoContext ctx){
+        if(ctx.tipo_basico() != null){
+            if(ctx.tipo_basico().getText().toUpperCase().equals("LITERAL"))
+                return Tipo.LITERAL;
+            if(ctx.tipo_basico().getText().toUpperCase().equals("INTEIRO"))
+                return Tipo.INTEIRO;
+            if(ctx.tipo_basico().getText().toUpperCase().equals("REAL"))
+                return Tipo.REAL;
+            return Tipo.LOGICO;
+        }
+        return null; // caso onde seja uma identificador, talvez seja melhor elaborar ele
+    }
+    
     public static Tipo verificarTipo(Escopo escopos, String nomeVar) {
         Tipo tipo = null;
         
         for(TabelaDeSimbolos tabela : escopos.recuperarTodosEscopos()){
-            tipo = tabela.verificar(nomeVar);
+            if(tabela.existe(nomeVar))
+                tipo = tabela.verificar(nomeVar);
             if(tipo != null) break;
         }
         return tipo;
@@ -254,13 +314,17 @@ public class LinguagemLAUtils {
        return Tipo.REGISTRO;
     }
 
-    public static Tipo verificarTipo(TabelaDeSimbolos tabela, VariavelContext ctx)
+    public static Tipo verificarTipo(Escopo escopos, VariavelContext ctx)
     {
+        TabelaDeSimbolos tabela = escopos.escopoAtual();
         Tipo tipo = verificarTipo(tabela, ctx.tipo());
 
+        
+
         ctx.identificador().forEach(ident -> {
-         
-            if (tabela.existe(ident.getText())){
+            //System.out.println("verificando ident -> " +ident.getText());
+            if (tabela.existe(ident.getText())  || escopos.recuperarTodosEscopos().get(escopos.recuperarTodosEscopos().size() - 1).existe(ident.getText()) /*verificando se existe no primeiro escopo, ou seja, no escopo global*/){
+                System.out.println("Erro -> " + ident.getText());
                 adicionarErroSemantico(
                     ident.start,
                     "identificador " + ident.getText() + " ja declarado anteriormente"
@@ -297,6 +361,31 @@ public class LinguagemLAUtils {
 
         if (tipo == Tipo.INVALIDO && ctx.tipo() != null){
             adicionarErroSemantico(ctx.tipo().start, "tipo " + ctx.tipo().getText() + " nao declarado" );
+        }
+
+        return tipo;
+    }
+
+    public static Tipo verificarTipo(TabelaDeSimbolos tabela, ParametroContext ctx)
+    {
+        Tipo tipo = verificarTipo(tabela, ctx.tipo_estendido());
+
+        ctx.identificador().forEach(ident -> {
+            System.out.println("ident -> " +ident.getText());
+            if (tabela.existe(ident.getText())){
+                adicionarErroSemantico(
+                    ident.start,
+                    "identificador " + ident.getText() + " ja declarado anteriormente"
+                    );
+            }
+            else{
+                System.out.println("adicionei variavel -> " + ident.getText() + " " + tipo);
+                tabela.inserir(ident.getText(), tipo);
+            }
+        });
+
+        if (tipo == Tipo.INVALIDO && ctx.tipo_estendido() != null){
+            adicionarErroSemantico(ctx.tipo_estendido().start, "tipo " + ctx.tipo_estendido().getText() + " nao declarado" );
         }
 
         return tipo;
