@@ -322,7 +322,7 @@ public class LinguagemLAUtils {
         
 
         ctx.identificador().forEach(ident -> {
-            System.out.println("verificando ident -> " +ident.getText());
+            //System.out.println("verificando ident -> " +ident.getText());
             if (tabela.existe(ident.getText())  || escopos.recuperarTodosEscopos().get(escopos.recuperarTodosEscopos().size() - 1).existe(ident.getText()) /*verificando se existe no primeiro escopo, ou seja, no escopo global*/){
                 System.out.println("Erro -> " + ident.getText());
                 adicionarErroSemantico(
@@ -331,17 +331,16 @@ public class LinguagemLAUtils {
                     );
             }
             else{
-                System.out.println("adicionei variavel -> " + ident.getText() + " " + tipo);
                 tabela.inserir(ident.getText(), tipo);
                 if(tipo == Tipo.REGISTRO){
                     if (tabela.existe(ctx.tipo().getText())){
                         String tipoRegistro = ctx.tipo().getText();
                         
                         List<String> variaveis = tabela.retornar_todas_occorencias_registro(tipoRegistro);
-                        System.out.println(tipoRegistro + " " + variaveis);
+                        //System.out.println(tipoRegistro + " " + variaveis);
 
                         for(String variavel : variaveis){
-                            System.out.println("AQUI -> " + ident.getText() + "." + variavel.split("\\.")[1] + " " + tabela.verificar(variavel));
+                            //System.out.println("AQUI -> " + ident.getText() + "." + variavel.split("\\.")[1] + " " + tabela.verificar(variavel));
                             tabela.inserir(ident.getText() + "." + variavel.split("\\.")[1], tabela.verificar(variavel));
                             
                         }
@@ -351,7 +350,7 @@ public class LinguagemLAUtils {
                         for(int i = 0; i < ctx.tipo().registro().variavel().size(); i++){
                             Tipo tipoRegistro = verificarTipo(tabela, ctx.tipo().registro().variavel(i).tipo());
                             for(int j = 0; j < ctx.tipo().registro().variavel(i).identificador().size(); j++){
-                                System.out.println("AQUI -> " + ident.getText() + "." + ctx.tipo().registro().variavel(i).identificador(j).getText()+ " " + tipoRegistro);
+                                //System.out.println("AQUI -> " + ident.getText() + "." + ctx.tipo().registro().variavel(i).identificador(j).getText()+ " " + tipoRegistro);
                                 tabela.inserir(ident.getText() + "." + ctx.tipo().registro().variavel(i).identificador(j).getText(), tipoRegistro);
                             }
                         }

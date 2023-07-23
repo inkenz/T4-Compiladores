@@ -1,5 +1,7 @@
 package br.ufscar.dc.compiladores.t4;
 
+import br.ufscar.dc.compiladores.t4.LAParser.IdentificadorContext;
+import br.ufscar.dc.compiladores.t4.LAParser.ParametroContext;
 import static br.ufscar.dc.compiladores.t4.LinguagemLAUtils.adicionarErroSemantico;
 import static br.ufscar.dc.compiladores.t4.LinguagemLAUtils.verificarTipo;
 import static br.ufscar.dc.compiladores.t4.LinguagemLAUtils.verificar;
@@ -61,7 +63,7 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
                 adicionarErroSemantico(ctx.start, "identificador " + nomeVar + " ja declarado anteriormente");
             }
             else{
-                System.out.println("adicionei declaracao local -> " + nomeVar + " " + tipo);
+                //System.out.println("adicionei declaracao local -> " + nomeVar + " " + tipo);
                 tabela.inserir(nomeVar, tipo);
             }
         }
@@ -86,17 +88,21 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
     @Override
     public Void visitDeclaracao_global(LAParser.Declaracao_globalContext ctx)
     {
-        TabelaDeSimbolos tabela = escopos.escopoAtual();
+        TabelaDeSimbolos tabelaBase = escopos.escopoAtual();
+        
+        String nomeVar = ctx.IDENT().getText();
+        if(tabelaBase.existe(nomeVar))
+            adicionarErroSemantico(ctx.start, "ja declarado");
 
         if (ctx.PROCEDIMENTO() != null){
-            String nomeVar = ctx.IDENT().getText();
-            if(tabela.existe(nomeVar))
-                adicionarErroSemantico(ctx.start, "identificador " + nomeVar + " ja declarado anteriormente");
-            for (int i = 0; i < ctx.parametros().parametro().size(); i++){
-                verificarTipo(tabela, ctx.parametros().parametro().get(i));
+            tabelaBase.inserir(nomeVar, Tipo.PROCEDIMENTO);
+            for(int i = 0; i<ctx.cmd().size() ; i++){
+                if(ctx.cmd().get(i).cmdRetorne()!= null){
+                    adicionarErroSemantico(ctx.start, "comando retorne nao permitido nesse escopo");
+                }
             }
+            
         }
-
         else if(ctx.FUNCAO() != null){
             // String nomeVar = ctx.IDENT().getText();
             // if(tabela.existe(nomeVar))
@@ -131,7 +137,7 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
                     Tipo tipo = verificarTipo(escopos, ctxParent.tipo().registro().variavel(i));
                     
                     for(int j = 0; j < ctxParent.tipo().registro().variavel(i).identificador().size(); j++){
-                        System.out.println("adicionei registro -> " + ctxParent.IDENT().getText() + "." + ctxParent.tipo().registro().variavel(i).identificador(j).getText() + " " + tipo);
+                        //System.out.println("adicionei registro -> " + ctxParent.IDENT().getText() + "." + ctxParent.tipo().registro().variavel(i).identificador(j).getText() + " " + tipo);
                         tabela.inserir(ctxParent.IDENT().getText() + "." + ctxParent.tipo().registro().variavel(i).identificador(j).getText(), tipo);
 
                     }
@@ -215,7 +221,7 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
         for(int i = 1; i < ctx.IDENT().size(); i++)
             nome += "." + ctx.IDENT(i).getText();
 
-        System.out.println("Novo nome -> " + nome);
+        //System.out.println("Novo nome -> " + nome + " "+ ctx.getParent().getParent().getClass());
 
         for ( TabelaDeSimbolos tabela: tabelas){
             if (tabela.existe(nome)){
@@ -231,4 +237,8 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
 
         return super.visitIdentificador(ctx);
     }
+
+    // private Tipo verificarTipo(Escopo escopos, LAParser.ParametroContext get) {
+    //     throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    // }
 }

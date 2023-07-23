@@ -42,6 +42,13 @@ public class TabelaDeSimbolos {
     }
     
     public Tipo verificar(String nome) {
+        /*
+        System.out.print("NOME: "+nome+"\n");
+        for(String key: tabela.keySet()){
+            System.out.print(key+"\n");
+        }
+        System.out.print("\n\n\n\n\n\n\n\n\n\n");
+        */
         return tabela.get(nome).tipo;
     }   
 
