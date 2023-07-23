@@ -22,6 +22,10 @@ public class Escopo {
         return pilhaDeTabelas.peek();
     }
 
+    public TabelaDeSimbolos primeiroEscopo(){
+        return pilhaDeTabelas.getLast();
+    }
+
     public LinkedList<TabelaDeSimbolos> recuperarTodosEscopos(){
         return pilhaDeTabelas;
     }

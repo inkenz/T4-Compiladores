@@ -34,7 +34,12 @@ public class LinguagemLAUtils {
     }
 
     public static Void verificar(Escopo escopos, ExpressaoContext ctxExpressao, Exp_aritmeticaContext ctx){
-        Tipo tipo = verificarTipo(escopos, ctx);
+        Tipo tipo;
+        
+        if(ctx.getText().contains("(") && escopos.primeiroEscopo().existe(ctx.getText().split("\\(")[0]))
+            tipo = Tipo.FUNCAO;
+        else
+            tipo = verificarTipo(escopos, ctx);
 
         if(tipo == Tipo.FUNCAO){
             List<LAParser.ExpressaoContext> expressaoParametros = ctxExpressao.termo_logico(0).fator_logico(0).parcela_logica().exp_relacional().exp_aritmetica(0).termo(0).fator(0).parcela(0).parcela_unario().expressao();
@@ -56,6 +61,7 @@ public class LinguagemLAUtils {
             else{
                 TabelaDeSimbolos escopoFuncao = escopoList.get(contador);
                 List<Tipo> tipoParametrosFuncao = escopoFuncao.retornar_todos_parametros_funcao(nomeFuncao); 
+
 
                 if(tipoParametrosFuncao.size() != expressaoParametros.size()){
                     System.out.println("Aqui erro " + tipoParametrosFuncao + " " + expressaoParametros.size());
@@ -100,7 +106,6 @@ public class LinguagemLAUtils {
         Tipo ret = null;
         for (Fator_logicoContext ta : ctx.fator_logico()) {
             Tipo aux = verificarTipo(escopos, ta);
-            //System.out.print(ctx.getText() + " 1 " + aux +"    \n");
             if (ret == null) {
                 ret = aux;
             } if(ret == Tipo.LOGICO){
@@ -133,8 +138,7 @@ public class LinguagemLAUtils {
         if(ctx.op_relacional() != null) return Tipo.LOGICO;
         
         for (Exp_aritmeticaContext ta : ctx.exp_aritmetica()) {
-            Tipo aux = verificarTipo(escopos, ta);
-            //System.out.print(ctx.getText() + " 3 " + aux +"    \n");
+            Tipo aux = verificarTipo(escopos, ta); 
             if (ret == null) {
                 ret = aux;
             } else if (ret != aux && aux != Tipo.INVALIDO) {
@@ -151,7 +155,14 @@ public class LinguagemLAUtils {
         Tipo ret = null;
         for (TermoContext ta : ctx.termo()) {
             Tipo aux = verificarTipo(escopos, ta);
-            //System.out.print(ctx.getText() + " 4 " + aux +"    \n");
+            if(aux == Tipo.FUNCAO){
+                for(TabelaDeSimbolos escopo : escopos.recuperarTodosEscopos()){
+                    if(!escopo.equals(escopos.primeiroEscopo()) && escopo.existe(ta.getText().split("\\(")[0])){
+                        // Buscando o tipo do return da função
+                        aux = escopo.verificar(ta.getText().split("\\(")[0]+".return");
+                    }
+                }
+            }
             if (ret == null) {
                 ret = aux;
             } else if (ret != aux && aux != Tipo.INVALIDO) {
@@ -279,10 +290,10 @@ public class LinguagemLAUtils {
         }
     }
 
-    public static Tipo verificarTipo(TabelaDeSimbolos tabela, Tipo_estendidoContext ctx)
+    public static Tipo verificarTipo(Escopo escopos, Tipo_estendidoContext ctx)
     {
         Tipo tipo;
-
+        TabelaDeSimbolos tabela = escopos.escopoAtual();
         // Caso haja o simbolo de ponteiro antes é declarado como ponteiro.
         if (ctx.PONTEIRO() != null){
             return Tipo.PONTEIRO;
@@ -291,6 +302,10 @@ public class LinguagemLAUtils {
             if (tabela.existe(ctx.IDENT().getText()))
             {
                 tipo = tabela.verificar(ctx.IDENT().getText());
+            }
+            // Verificando no ultimo escopo, ou seja, no escopo global
+            else if(escopos.primeiroEscopo().existe(ctx.IDENT().getText())){
+                tipo = escopos.primeiroEscopo().verificar(ctx.IDENT().getText());
             }
             else
             {
@@ -307,9 +322,9 @@ public class LinguagemLAUtils {
 
     
 
-    public static Tipo verificarTipo(TabelaDeSimbolos tabela,TipoContext ctx)
+    public static Tipo verificarTipo(Escopo escopos,TipoContext ctx)
     {
-       if(ctx.tipo_estendido() != null) return verificarTipo(tabela, ctx.tipo_estendido());
+       if(ctx.tipo_estendido() != null) return verificarTipo(escopos, ctx.tipo_estendido());
        
        return Tipo.REGISTRO;
     }
@@ -317,13 +332,10 @@ public class LinguagemLAUtils {
     public static Tipo verificarTipo(Escopo escopos, VariavelContext ctx)
     {
         TabelaDeSimbolos tabela = escopos.escopoAtual();
-        Tipo tipo = verificarTipo(tabela, ctx.tipo());
-
-        
-
+        Tipo tipo = verificarTipo(escopos, ctx.tipo());
         ctx.identificador().forEach(ident -> {
             //System.out.println("verificando ident -> " +ident.getText());
-            if (tabela.existe(ident.getText())  || escopos.recuperarTodosEscopos().get(escopos.recuperarTodosEscopos().size() - 1).existe(ident.getText()) /*verificando se existe no primeiro escopo, ou seja, no escopo global*/){
+            if (tabela.existe(ident.getText())  || escopos.primeiroEscopo().existe(ident.getText()) /*verificando se existe no primeiro escopo, ou seja, no escopo global*/){
                 System.out.println("Erro -> " + ident.getText());
                 adicionarErroSemantico(
                     ident.start,
@@ -348,9 +360,9 @@ public class LinguagemLAUtils {
                     }
                     else if(ctx.tipo().registro() != null){
                         for(int i = 0; i < ctx.tipo().registro().variavel().size(); i++){
-                            Tipo tipoRegistro = verificarTipo(tabela, ctx.tipo().registro().variavel(i).tipo());
+                            Tipo tipoRegistro = verificarTipo(escopos, ctx.tipo().registro().variavel(i).tipo());
                             for(int j = 0; j < ctx.tipo().registro().variavel(i).identificador().size(); j++){
-                                //System.out.println("AQUI -> " + ident.getText() + "." + ctx.tipo().registro().variavel(i).identificador(j).getText()+ " " + tipoRegistro);
+                                //System.out.println("AQUI Registro -> " + ident.getText() + "." + ctx.tipo().registro().variavel(i).identificador(j).getText()+ " " + tipoRegistro);
                                 tabela.inserir(ident.getText() + "." + ctx.tipo().registro().variavel(i).identificador(j).getText(), tipoRegistro);
                             }
                         }
@@ -366,9 +378,10 @@ public class LinguagemLAUtils {
         return tipo;
     }
 
-    public static Tipo verificarTipo(TabelaDeSimbolos tabela, ParametroContext ctx)
+    public static Tipo verificarTipo(Escopo escopos, ParametroContext ctx)
     {
-        Tipo tipo = verificarTipo(tabela, ctx.tipo_estendido());
+        TabelaDeSimbolos tabela = escopos.escopoAtual();
+        Tipo tipo = verificarTipo(escopos, ctx.tipo_estendido());
 
         ctx.identificador().forEach(ident -> {
             System.out.println("ident -> " +ident.getText());
@@ -381,6 +394,27 @@ public class LinguagemLAUtils {
             else{
                 System.out.println("adicionei variavel -> " + ident.getText() + " " + tipo);
                 tabela.inserir(ident.getText(), tipo);
+                if(tipo == Tipo.REGISTRO){
+                    TabelaDeSimbolos tabelaRegistro = null;
+                    if (tabela.existe(ctx.tipo_estendido().getText()))
+                        tabelaRegistro = tabela;
+                    else if(escopos.primeiroEscopo().existe(ctx.tipo_estendido().getText()))
+                        tabelaRegistro = escopos.primeiroEscopo();
+                    
+                    if(tabelaRegistro != null){
+                        String tipoRegistro = ctx.tipo_estendido().getText();
+
+                        List<String> variaveis = tabelaRegistro.retornar_todas_occorencias_registro(tipoRegistro);
+                        System.out.println(tipoRegistro + " " + variaveis);
+
+                        for(String variavel : variaveis){
+                            System.out.println("AQUI ADICIONANDO -> " + ident.getText() + "." + variavel.split("\\.")[1] + " " + tabelaRegistro.verificar(variavel));
+                            tabela.inserir(ident.getText() + "." + variavel.split("\\.")[1], tabelaRegistro.verificar(variavel));
+                            
+                        }
+
+                    }
+                }
             }
         });
 

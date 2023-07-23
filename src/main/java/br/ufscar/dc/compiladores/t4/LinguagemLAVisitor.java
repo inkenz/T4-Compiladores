@@ -4,6 +4,7 @@ import static br.ufscar.dc.compiladores.t4.LinguagemLAUtils.adicionarErroSemanti
 import static br.ufscar.dc.compiladores.t4.LinguagemLAUtils.verificarTipo;
 import static br.ufscar.dc.compiladores.t4.LinguagemLAUtils.verificar;
 
+import br.ufscar.dc.compiladores.t4.LAParser.ParametroContext;
 import br.ufscar.dc.compiladores.t4.TabelaDeSimbolos.Tipo;
 import java.util.LinkedList;
 public class LinguagemLAVisitor extends LABaseVisitor<Void>{
@@ -49,27 +50,24 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
     public Void visitDeclaracao_local(LAParser.Declaracao_localContext ctx)
     {
         TabelaDeSimbolos tabela = escopos.escopoAtual();
-
-        if (ctx.DECLARE() != null)
+        if (ctx.DECLARE() != null){
+            
             verificarTipo(escopos, ctx.variavel());       
+        }
         
         else if(ctx.TIPO() != null){
             String nomeVar = ctx.IDENT().getText();
-            Tipo tipo = verificarTipo(tabela, ctx.tipo());
-        
+            Tipo tipo = verificarTipo(escopos, ctx.tipo());
             if(tabela.existe(nomeVar)){
                 adicionarErroSemantico(ctx.start, "identificador " + nomeVar + " ja declarado anteriormente");
             }
             else{
-                //System.out.println("adicionei declaracao local -> " + nomeVar + " " + tipo);
                 tabela.inserir(nomeVar, tipo);
             }
         }
         else if(ctx.CONSTANTE() != null){
             String nomeVar = ctx.IDENT().getText();
             Tipo tipo = verificarTipo(tabela, ctx.tipo_basico());
-            
-            System.out.println("TAMANHO DO ESCOPOS " + escopos.recuperarTodosEscopos().size());
 
             if(tabela.existe(nomeVar)){
                 adicionarErroSemantico(ctx.start, "identificador " + nomeVar + " ja declarado anteriormente");
@@ -86,7 +84,7 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
     @Override
     public Void visitDeclaracao_global(LAParser.Declaracao_globalContext ctx)
     {
-        TabelaDeSimbolos tabelaBase = escopos.escopoAtual();
+        TabelaDeSimbolos tabelaBase = escopos.primeiroEscopo();
         
         String nomeVar = ctx.IDENT().getText();
         if(tabelaBase.existe(nomeVar))
@@ -94,27 +92,31 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
 
         if (ctx.PROCEDIMENTO() != null){
             tabelaBase.inserir(nomeVar, Tipo.PROCEDIMENTO);
-            for(int i = 0; i<ctx.cmd().size() ; i++){
-                if(ctx.cmd().get(i).cmdRetorne()!= null){
-                    adicionarErroSemantico(ctx.start, "comando retorne nao permitido nesse escopo");
+            escopos.criarNovoEscopo();
+            escopos.escopoAtual().inserir(nomeVar, Tipo.PROCEDIMENTO);
+            if(ctx.parametros() != null)
+                for(ParametroContext parametro : ctx.parametros().parametro()){
+                    verificarTipo(escopos, parametro);
                 }
-            }
+            // for(int i = 0; i<ctx.cmd().size() ; i++){
+            //     if(ctx.cmd().get(i).cmdRetorne()!= null){
+            //         System.out.println("😑😑😑😑😑😑 " + nomeVar);
+            //         adicionarErroSemantico(ctx.start, "comando retorne nao permitido nesse escopo");
+            //     }
+            // }
             
         }
         else if(ctx.FUNCAO() != null){
-            // String nomeVar = ctx.IDENT().getText();
-            // if(tabela.existe(nomeVar))
-            //     adicionarErroSemantico(ctx.start, "identificador " + nomeVar + " ja declarado anteriormente");
-            escopos.criarNovoEscopo();
-            
-            TabelaDeSimbolos tabelaFuncao = escopos.escopoAtual();
-
             System.out.println("\nInserindo função -> " + ctx.IDENT().getText() + "\n");
-            tabelaFuncao.inserir(ctx.IDENT().getText(), Tipo.FUNCAO);
-            tabelaFuncao.inserir(ctx.IDENT().getText()+".return", verificarTipo(ctx.tipo_estendido()));
+            tabelaBase.inserir(ctx.IDENT().getText(), Tipo.FUNCAO);
+            // salvamos a função no escopo global e criamos um escopo com só os parametros dela
+            escopos.criarNovoEscopo();
+            escopos.escopoAtual().inserir(nomeVar, Tipo.FUNCAO);
+            // Salvando o tipo do retorno da função, pois o tipo da funcao é salvo como Tipo.FUNCAO
+            escopos.escopoAtual().inserir(ctx.IDENT().getText()+".return", verificarTipo(ctx.tipo_estendido()));
 
             for (int i = 0; i < ctx.parametros().parametro().size(); i++){
-                verificarTipo(tabelaFuncao, ctx.parametros().parametro().get(i));
+                verificarTipo(escopos, ctx.parametros().parametro().get(i));
             }
         }
 
@@ -205,11 +207,11 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
 
     @Override
     public Void visitCmdSe(LAParser.CmdSeContext ctx){
-
         LAParser.ExpressaoContext expressao = ctx.expressao();
-
+        
         for(LAParser.Exp_aritmeticaContext termo : expressao.termo_logico(0).fator_logico(0).parcela_logica().exp_relacional().exp_aritmetica()){
             verificar(escopos, expressao, termo);
+            System.out.println("Cá estou " + termo.getText());
         }
 
         return super.visitCmdSe(ctx);

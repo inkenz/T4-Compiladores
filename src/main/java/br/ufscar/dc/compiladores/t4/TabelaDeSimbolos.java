@@ -56,10 +56,9 @@ public class TabelaDeSimbolos {
         List<Tipo> parametrosTipo = new ArrayList<>();
 
         for(String parametro : tabela.keySet()){
-            if(!parametro.equals(nomeFuncao) && !parametro.contains("return"))
+            if(!parametro.equals(nomeFuncao) && !parametro.contains("return") && !parametro.contains("."))
                 parametrosTipo.add(tabela.get(parametro).tipo);
         }
-
         return parametrosTipo;
     }
 
