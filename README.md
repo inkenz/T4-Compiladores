@@ -1,6 +1,6 @@
-# T3-Compiladores - Analisador Sintático da Linguagem LA
+# T4-Compiladores - Analisador Sintático da Linguagem LA
 
-Trabalho 3 da Disciplina de Construção de Compiladores 2023/01 UFSCar
+Trabalho 4 da Disciplina de Construção de Compiladores 2023/01 UFSCar
 
 ## Grupo:
 
