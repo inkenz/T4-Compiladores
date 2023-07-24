@@ -35,7 +35,7 @@ public class LinguagemLAUtils {
 
     public static Void verificar(Escopo escopos, ExpressaoContext ctxExpressao, Exp_aritmeticaContext ctx){
         Tipo tipo;
-        
+
         if(ctx.getText().contains("(") && escopos.primeiroEscopo().existe(ctx.getText().split("\\(")[0]))
             tipo = Tipo.FUNCAO;
         else
@@ -64,13 +64,13 @@ public class LinguagemLAUtils {
 
 
                 if(tipoParametrosFuncao.size() != expressaoParametros.size()){
-                    System.out.println("Aqui erro " + tipoParametrosFuncao + " " + expressaoParametros.size());
+                    //System.out.println("Aqui erro " + tipoParametrosFuncao + " " + expressaoParametros.size());
                     adicionarErroSemantico(expressaoParametros.get(0).start, "incompatibilidade de parametros na chamada de " + nomeFuncao);
                 }
                 else{
                     for(int i = 0; i < expressaoParametros.size(); i++){
                         Tipo tipoParametro = verificarTipo(escopos, expressaoParametros.get(i));
-                        System.out.println("AQUI -> " + tipoParametrosFuncao.get(i) +  " " + expressaoParametros.get(i).getText() + " " + tipoParametro);
+                        //System.out.println("AQUI -> " + tipoParametrosFuncao.get(i) +  " " + expressaoParametros.get(i).getText() + " " + tipoParametro);
 
                         if(tipoParametro == Tipo.FUNCAO){
                             //System.out.println("👀👀 -> " + verificarTipo(escopos, expressaoParametros.get(i)));
@@ -336,7 +336,7 @@ public class LinguagemLAUtils {
         ctx.identificador().forEach(ident -> {
             //System.out.println("verificando ident -> " +ident.getText());
             if (tabela.existe(ident.getText())  || escopos.primeiroEscopo().existe(ident.getText()) /*verificando se existe no primeiro escopo, ou seja, no escopo global*/){
-                System.out.println("Erro -> " + ident.getText());
+                //System.out.println("Erro -> " + ident.getText());
                 adicionarErroSemantico(
                     ident.start,
                     "identificador " + ident.getText() + " ja declarado anteriormente"
@@ -345,15 +345,22 @@ public class LinguagemLAUtils {
             else{
                 tabela.inserir(ident.getText(), tipo);
                 if(tipo == Tipo.REGISTRO){
-                    if (tabela.existe(ctx.tipo().getText())){
+                    TabelaDeSimbolos tabelaRegistro = null;
+
+                    if(tabela.existe(ctx.tipo().getText()))
+                        tabelaRegistro = tabela;
+                    else if(escopos.primeiroEscopo().existe(ctx.tipo().getText()))
+                        tabelaRegistro = escopos.primeiroEscopo();
+
+                    if (tabelaRegistro != null){
                         String tipoRegistro = ctx.tipo().getText();
                         
-                        List<String> variaveis = tabela.retornar_todas_occorencias_registro(tipoRegistro);
+                        List<String> variaveis = tabelaRegistro.retornar_todas_occorencias_registro(tipoRegistro);
                         //System.out.println(tipoRegistro + " " + variaveis);
 
                         for(String variavel : variaveis){
-                            //System.out.println("AQUI -> " + ident.getText() + "." + variavel.split("\\.")[1] + " " + tabela.verificar(variavel));
-                            tabela.inserir(ident.getText() + "." + variavel.split("\\.")[1], tabela.verificar(variavel));
+                            //System.out.println("🙄🙄🙄🙄 -> " + ident.getText() + "." + variavel+ " " + tabelaRegistro.verificar(variavel));
+                            tabela.inserir(ident.getText() + "." + variavel.split("\\.")[1], tabelaRegistro.verificar(variavel));
                             
                         }
 
@@ -384,7 +391,7 @@ public class LinguagemLAUtils {
         Tipo tipo = verificarTipo(escopos, ctx.tipo_estendido());
 
         ctx.identificador().forEach(ident -> {
-            System.out.println("ident -> " +ident.getText());
+            //System.out.println("ident -> " +ident.getText());
             if (tabela.existe(ident.getText())){
                 adicionarErroSemantico(
                     ident.start,
@@ -392,7 +399,7 @@ public class LinguagemLAUtils {
                     );
             }
             else{
-                System.out.println("adicionei variavel -> " + ident.getText() + " " + tipo);
+                //System.out.println("adicionei variavel -> " + ident.getText() + " " + tipo);
                 tabela.inserir(ident.getText(), tipo);
                 if(tipo == Tipo.REGISTRO){
                     TabelaDeSimbolos tabelaRegistro = null;
@@ -405,10 +412,10 @@ public class LinguagemLAUtils {
                         String tipoRegistro = ctx.tipo_estendido().getText();
 
                         List<String> variaveis = tabelaRegistro.retornar_todas_occorencias_registro(tipoRegistro);
-                        System.out.println(tipoRegistro + " " + variaveis);
+                        //System.out.println(tipoRegistro + " " + variaveis);
 
                         for(String variavel : variaveis){
-                            System.out.println("AQUI ADICIONANDO -> " + ident.getText() + "." + variavel.split("\\.")[1] + " " + tabelaRegistro.verificar(variavel));
+                            //System.out.println("AQUI ADICIONANDO -> " + ident.getText() + "." + variavel.split("\\.")[1] + " " + tabelaRegistro.verificar(variavel));
                             tabela.inserir(ident.getText() + "." + variavel.split("\\.")[1], tabelaRegistro.verificar(variavel));
                             
                         }

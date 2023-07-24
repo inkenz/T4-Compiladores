@@ -51,7 +51,6 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
     {
         TabelaDeSimbolos tabela = escopos.escopoAtual();
         if (ctx.DECLARE() != null){
-            
             verificarTipo(escopos, ctx.variavel());       
         }
         
@@ -107,7 +106,7 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
             
         }
         else if(ctx.FUNCAO() != null){
-            System.out.println("\nInserindo função -> " + ctx.IDENT().getText() + "\n");
+            //System.out.println("\nInserindo função -> " + ctx.IDENT().getText() + "\n");
             tabelaBase.inserir(ctx.IDENT().getText(), Tipo.FUNCAO);
             // salvamos a função no escopo global e criamos um escopo com só os parametros dela
             escopos.criarNovoEscopo();
@@ -134,10 +133,10 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
                 tabela.inserir(ctxParent.IDENT().getText(), Tipo.REGISTRO);
 
                 for(int i = 0; i < ctxParent.tipo().registro().variavel().size(); i++) {
-                    Tipo tipo = verificarTipo(escopos, ctxParent.tipo().registro().variavel(i));
+                    Tipo tipo = verificarTipo(escopos, ctxParent.tipo().registro().variavel(i).tipo());
                     
                     for(int j = 0; j < ctxParent.tipo().registro().variavel(i).identificador().size(); j++){
-                        //System.out.println("adicionei registro -> " + ctxParent.IDENT().getText() + "." + ctxParent.tipo().registro().variavel(i).identificador(j).getText() + " " + tipo);
+                        //System.out.println("adicionei registro -> " + ctxParent.IDENT().getText() + "." + ctxParent.tipo().registro().variavel(i).identificador(j).getText() + " " + tipo + tabela.equals(escopos.primeiroEscopo()));
                         tabela.inserir(ctxParent.IDENT().getText() + "." + ctxParent.tipo().registro().variavel(i).identificador(j).getText(), tipo);
 
                     }
@@ -211,7 +210,7 @@ public class LinguagemLAVisitor extends LABaseVisitor<Void>{
         
         for(LAParser.Exp_aritmeticaContext termo : expressao.termo_logico(0).fator_logico(0).parcela_logica().exp_relacional().exp_aritmetica()){
             verificar(escopos, expressao, termo);
-            System.out.println("Cá estou " + termo.getText());
+            //System.out.println("Cá estou " + termo.getText());
         }
 
         return super.visitCmdSe(ctx);
